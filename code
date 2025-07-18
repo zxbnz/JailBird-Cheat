@@ -1,3 +1,4 @@
+local fpsLabel -- forward declaration
 -- Settings
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
@@ -63,6 +64,19 @@ local LoadButton = SettingsTab:CreateButton({
     end,
 })
 
+SettingsTab:CreateToggle({
+	Name = "Show FPS & Ping Counter",
+	CurrentValue = false,
+	Flag = "ShowFPSCounter",
+	Callback = function(Value)
+		if fpsLabel then
+			fpsLabel.Visible = Value
+		else
+			warn("FPS Label not found")
+		end
+	end,
+})
+
 -- Theme Selector Dropdown
 local ThemeDropdown = ThemesTab:CreateDropdown({
     Name = "Select Theme",
@@ -98,8 +112,8 @@ local ThemeDropdown = ThemesTab:CreateDropdown({
     end,
  })
 
-
-local Label = UpdatesTab:CreateLabel("ESP is under testing as of right now.", 4483362458, Color3.fromRGB(255, 255, 255), false) -- Title, Icon, Color, IgnoreTheme
+local Label = UpdatesTab:CreateLabel("FPS and Ping counter is added.", 4483362458, Color3.fromRGB(255, 255, 255), false) -- Title, Icon, Color, IgnoreTheme
+local Label = UpdatesTab:CreateLabel("ESP was succesfully working.", 4483362458, Color3.fromRGB(255, 255, 255), false) -- Title, Icon, Color, IgnoreTheme
 
 -- Add this in the UItab section, before or after the other ESP sections
 local PlayerESPSection = UItab:CreateSection("Player ESP Settings")
@@ -1244,4 +1258,98 @@ Rayfield:DestroySignal():Connect(function()
         connection:Disconnect()
     end
     playerConnections = {}
+end)
+-- Create the FPS GUI
+local fpsGui = Instance.new("ScreenGui")
+fpsGui.Name = "FPSCounterGUI"
+fpsGui.ResetOnSpawn = false
+fpsGui.IgnoreGuiInset = true
+fpsGui.Parent = PlayerGui
+
+fpsLabel = Instance.new("TextLabel")
+fpsLabel.Size = UDim2.new(0, 120, 0, 30)
+fpsLabel.Position = UDim2.new(1, -130, 0, 10)
+fpsLabel.AnchorPoint = Vector2.new(0, 0)
+fpsLabel.BackgroundTransparency = 1
+fpsLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+fpsLabel.TextStrokeTransparency = 0.7
+fpsLabel.Font = Enum.Font.SourceSansBold
+fpsLabel.TextSize = 18
+fpsLabel.Text = "FPS: ..."
+fpsLabel.Visible = false
+fpsLabel.Parent = fpsGui
+
+-- FPS calculation
+local lastTime = tick()
+local frameCount = 0
+
+RunService.RenderStepped:Connect(function()
+	if not fpsLabel.Visible then return end
+
+	frameCount += 1
+	local now = tick()
+
+	if now - lastTime >= 1 then
+		local fps = math.floor(frameCount / (now - lastTime))
+
+		
+		local pingValue = 0
+		local stats = game:GetService("Stats")
+		local perfStats = stats:FindFirstChild("PerformanceStats")
+		local pingStat = perfStats and perfStats:FindFirstChild("Ping")
+		if pingStat and pingStat:IsA("NumberValue") then
+			pingValue = math.floor(pingStat.Value)
+		end
+
+fpsLabel.Text = "FPS: " .. fps .. " | Ping: " .. pingValue .. "ms"
+
+if pingValue <= 50 then
+	fpsLabel.TextColor3 = Color3.fromRGB(0, 255, 0) -- Green
+elseif pingValue <= 100 then
+	fpsLabel.TextColor3 = Color3.fromRGB(255, 255, 0) -- Yellow
+else
+	fpsLabel.TextColor3 = Color3.fromRGB(255, 0, 0) -- Red
+end
+
+
+		frameCount = 0
+		lastTime = now
+	end
+end)
+
+local fpsGui = Instance.new("ScreenGui")
+fpsGui.Name = "FPSCounterGUI"
+fpsGui.ResetOnSpawn = false
+fpsGui.IgnoreGuiInset = true
+fpsGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+
+local fpsLabel = Instance.new("TextLabel")
+fpsLabel.Size = UDim2.new(0, 120, 0, 30)
+fpsLabel.Position = UDim2.new(1, -130, 0, 10)
+fpsLabel.AnchorPoint = Vector2.new(0, 0)
+fpsLabel.BackgroundTransparency = 1
+fpsLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+fpsLabel.TextStrokeTransparency = 0.7
+fpsLabel.Font = Enum.Font.SourceSansBold
+fpsLabel.TextSize = 18
+fpsLabel.Text = "FPS: ..."
+fpsLabel.Visible = false
+fpsLabel.Parent = fpsGui
+
+local RunService = game:GetService("RunService")
+
+local lastTime = tick()
+local frameCount = 0
+
+RunService.RenderStepped:Connect(function()
+	if not fpsLabel.Visible then return end
+
+	frameCount += 1
+	local now = tick()
+	if now - lastTime >= 1 then
+		local fps = math.floor(frameCount / (now - lastTime))
+		fpsLabel.Text = "FPS: " .. fps
+		frameCount = 0
+		lastTime = now
+	end
 end)
