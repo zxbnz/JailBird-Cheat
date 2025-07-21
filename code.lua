@@ -3,7 +3,8 @@ local fov = 100
 local smoothing = 0.03
 local predictionFactor = 0.1  -- Adjust this factor to improve prediction accuracy
 local highlightEnabled = false  -- Variable to enable or disable target highlighting. Change to False if using an ESP script.
-local lockPart = "Head"  -- Choose what part it locks onto. Ex. HumanoidRootPart or Head
+local lockOptions = {"Head", "Chest", "Both"}
+local selectedLockOption = "Head"
  
 local Toggle = false  -- Enable or disable toggle mode
 local ToggleKey = Enum.KeyCode.E  -- Choose the key for toggling aimbot lock
@@ -39,7 +40,7 @@ local debounce = false  -- Debounce variable
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
-    Name = "Jailbird Script | Nova",
+    Name = "ValoloBlox Script | Nova",
     LoadingTitle = "Loading Script.",
     LoadingSubtitle = "by zxbnzlol1",
     Theme = "Default",
@@ -252,9 +253,9 @@ Storage.Parent = CoreGui
 Storage.Name = "Highlight_Storage"
 
 -- Function to get the enemy team of the local player
-Local function getEnemyTeam()
+local function getEnemyTeam()
     -- Replace these with the actual team names in your game
-    local ATTACKER_TEAM = "Attackers"
+    local ATTACKER_TEAM = "Atackers"
     local DEFENDER_TEAM = "Defenders"
     
     if not lp.Team then return nil end
@@ -886,7 +887,7 @@ local NoclipToggle = MainTab:CreateToggle({
     end,
 })
 
-
+local flysigmasection = MainTab:CreateSection("Aim Assist")
 -- Create Toggle for aimbotEnabled
 MainTab:CreateToggle({
     Name = "Enable Aimassist",
@@ -937,179 +938,6 @@ MainTab:CreateToggle({
     end,
 })
 
--- Toggle: Team Check On/Off
-MainTab:CreateToggle({
-    Name = "Enable Team Check",
-    CurrentValue = teamCheck,
-    Flag = "TeamCheckToggle",
-    Callback = function(Value)
-        teamCheck = Value
-        print("Team Check:", teamCheck)
-    end,
-})
- 
-local function getClosest(cframe)
-    local ray = Ray.new(cframe.Position, cframe.LookVector).Unit
-    local target = nil
-    local mag = math.huge
-    local screenCenter = workspace.CurrentCamera.ViewportSize / 2
- 
-    for i, v in pairs(Players:GetPlayers()) do
-        if v.Character and v.Character:FindFirstChild(lockPart) and v.Character:FindFirstChild("Humanoid") and v.Character:FindFirstChild("HumanoidRootPart") and v ~= Players.LocalPlayer and (v.Team ~= Players.LocalPlayer.Team or (not teamCheck)) then
-            local screenPoint, onScreen = workspace.CurrentCamera:WorldToViewportPoint(v.Character[lockPart].Position)
-            local distanceFromCenter = (Vector2.new(screenPoint.X, screenPoint.Y) - screenCenter).Magnitude
- 
-            if onScreen and distanceFromCenter <= fov then
-                local magBuf = (v.Character[lockPart].Position - ray:ClosestPoint(v.Character[lockPart].Position)).Magnitude
- 
-                if magBuf < mag then
-                    mag = magBuf
-                    target = v
-                end
-            end
-        end
-    end
- 
-    return target
-end
- 
-local function updateFOVRing()
-    FOVring.Position = workspace.CurrentCamera.ViewportSize / 2
-end
- 
-local function highlightTarget(target)
-    if highlightEnabled and target and target.Character then
-        local highlight = Instance.new("Highlight")
-        highlight.Adornee = target.Character
-        highlight.FillColor = Color3.fromRGB(255, 128, 128)
-        highlight.OutlineColor = Color3.fromRGB(255, 0, 0)
-        highlight.Parent = target.Character
-    end
-end
- 
-local function removeHighlight(target)
-    if highlightEnabled and target and target.Character and target.Character:FindFirstChildOfClass("Highlight") then
-        target.Character:FindFirstChildOfClass("Highlight"):Destroy()
-    end
-end
- 
-local function predictPosition(target)
-    if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
-        local velocity = target.Character.HumanoidRootPart.Velocity
-        local position = target.Character[lockPart].Position
-        local predictedPosition = position + (velocity * predictionFactor)
-        return predictedPosition
-    end
-    return nil
-end
- 
-local function handleToggle()
-    if debounce then return end
-    debounce = true
-    toggleState = not toggleState
-    wait(0.3)  -- Debounce time to prevent multiple toggles
-    debounce = false
-end
- 
-loop = RunService.RenderStepped:Connect(function()
-    if aimbotEnabled then
-        updateFOVRing()
- 
-        local localPlayer = Players.LocalPlayer.Character
-        local cam = workspace.CurrentCamera
-        local screenCenter = workspace.CurrentCamera.ViewportSize / 2
- 
-        if Toggle then
-            if UserInputService:IsKeyDown(ToggleKey) then
-                handleToggle()
-            end
-        else
-            toggleState = UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2)
-        end
- 
-        if toggleState then
-            if not currentTarget then
-                currentTarget = getClosest(cam.CFrame)
-                highlightTarget(currentTarget)  -- Highlight the new target if enabled
-            end
- 
-            if currentTarget and currentTarget.Character and currentTarget.Character:FindFirstChild(lockPart) then
-                local predictedPosition = predictPosition(currentTarget)
-                if predictedPosition then
-                    workspace.CurrentCamera.CFrame = workspace.CurrentCamera.CFrame:Lerp(CFrame.new(cam.CFrame.Position, predictedPosition), smoothing)
-                end
-                FOVring.Color = Color3.fromRGB(0, 255, 0)  -- Change FOV ring color to green when locked onto a target
-            else
-                FOVring.Color = Color3.fromRGB(255, 128, 128)  -- Revert FOV ring color to original when not locked onto a target
-            end
-        else
-            if currentTarget and highlightEnabled then
-                removeHighlight(currentTarget)  -- Remove highlight from the old target
-            end
-            currentTarget = nil
-            FOVring.Color = Color3.fromRGB(255, 128, 128)  -- Revert FOV ring color to original when not locked onto a target
-        end
-    end
-end)
-
-if highlightEnabled then
-    -- apply highlights
-end
-
-if teamCheck and player.Team == LocalPlayer.Team then
-    -- skip this player
-end
-
-
--- Create Toggle for aimbotEnabled
-MainTab:CreateToggle({
-    Name = "Enable Aimassist",
-    CurrentValue = aimbotEnabled,
-    Flag = "AimbotToggle",
-    Callback = function(Value)
-        aimbotEnabled = Value
-        print("Aimbot Enabled:", aimbotEnabled)
-    end,
-})
-MainTab:CreateToggle({
-    Name = "Show FOV Ring",
-    CurrentValue = showFOV,
-    Flag = "FOVRingToggle",
-    Callback = function(Value)
-        showFOV = Value
-        FOVring.Visible = showFOV
-        print("FOV Ring Visible:", showFOV)
-    end,
-})
-
-MainTab:CreateSlider({
-    Name = "FOV Size",
-    Range = {10, 500}, -- Min and Max values
-    Increment = 1,
-    Suffix = "px",
-    CurrentValue = fov,
-    Flag = "FOVSlider",
-    Callback = function(Value)
-        fov = Value
-        print("FOV set to:", fov)
-
-        -- Optional: update your FOVring radius dynamically
-        if FOVring then
-            FOVring.Radius = fov
-        end
-    end,
-})
-
--- Toggle: Highlight ESP On/Off
-MainTab:CreateToggle({
-    Name = "Enable Highlight ESP",
-    CurrentValue = highlightEnabled,
-    Flag = "HighlightToggle",
-    Callback = function(Value)
-        highlightEnabled = Value
-        print("Highlight ESP:", highlightEnabled)
-    end,
-})
 
 -- Toggle: Team Check On/Off
 MainTab:CreateToggle({
@@ -1121,6 +949,19 @@ MainTab:CreateToggle({
         print("Team Check:", teamCheck)
     end,
 })
+
+
+Main:CreateDropdown({
+    Name = "Aimbot Lock Part",
+    Options = {"Head", "Chest", "Both"},
+    CurrentOption = "Head",
+    Flag = "LockPartDropdown",
+    Callback = function(Option)
+        selectedLockOption = Option
+        print("Selected Lock Part:", selectedLockOption)
+    end,
+})
+
  
 local function getClosest(cframe)
     local ray = Ray.new(cframe.Position, cframe.LookVector).Unit
@@ -1718,4 +1559,39 @@ Rayfield:DestroySignal():Connect(function()
     playerConnections = {}
 end)
 
+local fpsGui = Instance.new("ScreenGui")
+fpsGui.Name = "FPSCounterGUI"
+fpsGui.ResetOnSpawn = false
+fpsGui.IgnoreGuiInset = true
+fpsGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
 
+local fpsLabel = Instance.new("TextLabel")
+fpsLabel.Size = UDim2.new(0, 120, 0, 30)
+fpsLabel.Position = UDim2.new(1, -130, 0, 10)
+fpsLabel.AnchorPoint = Vector2.new(0, 0)
+fpsLabel.BackgroundTransparency = 1
+fpsLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+fpsLabel.TextStrokeTransparency = 0.7
+fpsLabel.Font = Enum.Font.SourceSansBold
+fpsLabel.TextSize = 18
+fpsLabel.Text = "FPS: ..."
+fpsLabel.Visible = false
+fpsLabel.Parent = fpsGui
+
+local RunService = game:GetService("RunService")
+
+local lastTime = tick()
+local frameCount = 0
+
+RunService.RenderStepped:Connect(function()
+	if not fpsLabel.Visible then return end
+
+	frameCount += 1
+	local now = tick()
+	if now - lastTime >= 1 then
+		local fps = math.floor(frameCount / (now - lastTime))
+		fpsLabel.Text = "FPS: " .. fps
+		frameCount = 0
+		lastTime = now
+	end
+end)
